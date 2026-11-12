@@ -1,0 +1,66 @@
+name: Camoufox Stream Engine
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_url:
+        description: "Web page URL containing the video player"
+        required: true
+        type: string
+      stream_key:
+        description: "Stream Key ID (e.g. 1, 1.4, s1.1) or custom RTMP URL"
+        required: true
+        default: "1"
+        type: string
+      stream_quality:
+        description: "Stream Quality & Bitrate"
+        required: false
+        default: "Original (1080p Max)"
+        type: choice
+        options:
+          - "Original (1080p Max)"
+          - "1080p"
+          - "720p"
+          - "480p"
+          - "360p"
+      duration_minutes:
+        description: "Maximum stream duration in minutes (max 340)"
+        required: false
+        default: "180"
+        type: string
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg xvfb
+
+      - name: Install Python Packages & Fetch Camoufox
+        run: |
+          pip install -r requirements.txt
+          # Downloads the 1.2GB pre-patched Firefox binary designed for stealth
+          python -m camoufox fetch
+
+      - name: Run Camoufox Engine
+        env:
+          SOURCE_URL: ${{ github.event.inputs.source_url }}
+          STREAM_KEY: ${{ github.event.inputs.stream_key }}
+          STREAM_QUALITY: ${{ github.event.inputs.stream_quality }}
+          DURATION_MINUTES: ${{ github.event.inputs.duration_minutes }}
+        run: |
+          # xvfb-run creates a virtual display so Camoufox avoids headless detection
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" python stream.py
