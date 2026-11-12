@@ -23,6 +23,19 @@ on:
           - "720p"
           - "480p"
           - "360p"
+      proxy_url:
+        description: "Optional HTTP Proxy (http://user:pass@host:port) - overrides secret"
+        required: false
+        default: ""
+        type: string
+      proxy_ffmpeg:
+        description: "Route FFmpeg HLS segments through proxy too"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
       duration_minutes:
         description: "Maximum stream duration in minutes (max 340)"
         required: false
@@ -52,7 +65,6 @@ jobs:
       - name: Install Python Packages & Fetch Camoufox
         run: |
           pip install -r requirements.txt
-          # Downloads the 1.2GB pre-patched Firefox binary designed for stealth
           python -m camoufox fetch
 
       - name: Run Camoufox Engine
@@ -60,7 +72,8 @@ jobs:
           SOURCE_URL: ${{ github.event.inputs.source_url }}
           STREAM_KEY: ${{ github.event.inputs.stream_key }}
           STREAM_QUALITY: ${{ github.event.inputs.stream_quality }}
+          PROXY_URL: ${{ github.event.inputs.proxy_url || secrets.PROXY_URL }}
+          PROXY_FFMPEG: ${{ github.event.inputs.proxy_ffmpeg }}
           DURATION_MINUTES: ${{ github.event.inputs.duration_minutes }}
         run: |
-          # xvfb-run creates a virtual display so Camoufox avoids headless detection
           xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" python stream.py
