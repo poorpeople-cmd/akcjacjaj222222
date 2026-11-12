@@ -1,2 +1,2 @@
-camoufox[geoip]==0.5.8
-playwright==1.49.0
+camoufox[geoip]
+playwright
